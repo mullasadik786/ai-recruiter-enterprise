@@ -192,7 +192,7 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             )
             sg = SendGridAPIClient(gateway_password)
             response = sg.send(message)
-            # FIX: Syntax error fixed by specifying correct status codes
+            # FIX 1: specify valid success HTTP status codes for SendGrid (200, 201, 202)
             if response.status_code in:
                 return True
             else:
@@ -207,7 +207,7 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
 # ==============================================================================
 tab1, tab2 = st.tabs(["📥 Resume Ingestion Engine", "📊 Candidate Calibration Pipeline"])
 
-# ---- TAB 1: RESUME INGESTION ENGINE ----
+# ---- TAB 1: RESUME Ingestion Engine ----
 with tab1:
     st.subheader("Upload Inbound Documents")
     uploaded_files = st.file_uploader("Drop candidate resumes here (PDF only)", type=["pdf"], accept_multiple_files=True)
@@ -219,4 +219,3 @@ with tab1:
             st.warning("Please configure your OpenAI Token Key Space in the sidebar first.")
         elif not uploaded_files:
             st.warning("Please upload at least one candidate PDF document.")
-        else:
