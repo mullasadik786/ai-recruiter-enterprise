@@ -11,46 +11,59 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from openai import OpenAI
 from pypdf import PdfReader
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content
+
+# sendgrid ఇంపోర్ట్ లోపం రాకుండా ఉండటానికి ఒక సేఫ్ హ్యాండ్లర్
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail, Email, To, Content
+    SENDGRID_AVAILABLE = True
+except ImportError:
+    SENDGRID_AVAILABLE = False
 
 # ==============================================================================
-# 1. DATABASE SETUP (SQLite Persistence Layer)
+# 1. DATABASE SETUP (Streamlit Cloud Safe Mode)
 # ==============================================================================
-DB_FILE = "ai_recruiter.db"
+# Cloud ఎన్విరాన్మెంట్‌లో రైట్ పర్మిషన్స్ ప్రాబ్లమ్ రాకుండా ఉండటానికి /tmp/ లో డేటాబేస్ క్రియేట్ చేయడం మంచిది
+DB_FILE = "/tmp/ai_recruiter.db" if not os.access('.', os.W_OK) else "ai_recruiter.db"
 
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS candidates (
-            candidate_id TEXT PRIMARY KEY,
-            name TEXT,
-            email TEXT,
-            phone TEXT,
-            final_score REAL,
-            comm_score REAL,
-            tech_score REAL,
-            meet_link TEXT,
-            justification TEXT,
-            email_status TEXT DEFAULT 'Pending'
-        )
-    """)
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS candidates (
+                candidate_id TEXT PRIMARY KEY,
+                name TEXT,
+                email TEXT,
+                phone TEXT,
+                final_score REAL,
+                comm_score REAL,
+                tech_score REAL,
+                meet_link TEXT,
+                justification TEXT,
+                email_status TEXT DEFAULT 'Pending'
+            )
+        """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        pass
 
 def save_candidate_to_db(c):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT OR REPLACE INTO candidates 
-        (candidate_id, name, email, phone, final_score, comm_score, tech_score, meet_link, justification, email_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (c['candidate_id'], c['extracted_name'], c['email'], c['phone'], 
-          c['final_weighted_score'], c['communication_score'], c['technical_fit_score'], 
-          c['meet_link'], c['justification'], c.get('email_status', 'Pending')))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO candidates 
+            (candidate_id, name, email, phone, final_score, comm_score, tech_score, meet_link, justification, email_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (c['candidate_id'], c['extracted_name'], c['email'], c['phone'], 
+              c['final_weighted_score'], c['communication_score'], c['technical_fit_score'], 
+              c['meet_link'], c['justification'], c.get('email_status', 'Pending')))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        pass
 
 init_db()
 
@@ -166,6 +179,9 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             st.error(f"Gmail Mail Transmission Error: {e}")
             return False
     else:
+        if not SENDGRID_AVAILABLE:
+            st.error("SendGrid package is not fully initialized in this environment yet. Try Gmail SMTP Gateway.")
+            return False
         try:
             from_email_obj = Email(sender_email)
             to_email_obj = To(to_email)
@@ -183,7 +199,10 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
 # ==============================================================================
 if api_key:
     client = OpenAI(api_key=api_key)
+else:
+    st.info("💡 Application ready. Please provide your OpenAI API key in the sidebar configuration to begin screening.")
 
+if api_key:
     st.sidebar.header("📋 Job Requirements Mapping")
     job_description = st.sidebar.text_area(
         "Semantic Target Parameters (Job Profile):",
@@ -194,20 +213,3 @@ if api_key:
     st.subheader("📁 Ingest Unstructured Resumes (Bulk Load PDF Gateway)")
     uploaded_files = st.file_uploader("Drag targets straight into the intake system container", type=["pdf"], accept_multiple_files=True)
 
-    if uploaded_files:
-        w_comm_float = comm_weight / 100.0
-        w_tech_float = tech_weight / 100.0
-
-        if st.button("🚀 Trigger AI Processing Engine & Semantic Ranking"):
-            with st.spinner("Analyzing unstructured text payloads and adjusting ranking matrices..."):
-                parsed_candidates = []
-                for idx, file in enumerate(uploaded_files):
-                    resume_text = extract_text_from_pdf(file)
-                    if resume_text:
-                        parsed_candidates.append({
-                            "id": f"CANDIDATE_{idx+1:02d}",
-                            "file_name": file.name,
-                            "resume_text": resume_text[:4000]
-                        })
-
-                
