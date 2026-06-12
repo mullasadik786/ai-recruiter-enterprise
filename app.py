@@ -218,4 +218,3 @@ if run_engine:
     else:
         client = OpenAI(api_key=api_key)
         w_comm_float = comm_weight / 100.0
-
