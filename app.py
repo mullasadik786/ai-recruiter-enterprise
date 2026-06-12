@@ -77,7 +77,7 @@ st.markdown("---")
 
 st.sidebar.header("⚙️ Core Engine Configuration")
 
-# API కీ కోసం ఇన్‌పుట్ బాక్స్
+# Input for OpenAI API Key
 api_key = os.environ.get("OPENAI_API_KEY", "")
 if not api_key:
     api_key = st.sidebar.text_input("OpenAI Token Key Space:", type="password", help="Input your sk-... token layer here.")
@@ -182,39 +182,39 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
         if not SENDGRID_AVAILABLE:
             st.error("SendGrid package is not fully initialized in this environment yet. Try Gmail SMTP Gateway.")
             return False
+        
         try:
-            from_email_obj = Email(sender_email)
-            to_email_obj = To(to_email)
-            content_payload = Content("text/html", html_body)
-            mail = Mail(from_email_obj, to_email_obj, subject, content_payload)
-            sg_client = SendGridAPIClient(api_key=gateway_password)
-            sg_client.send(mail)
-            return True
+            message = Mail(
+                from_email=sender_email,
+                to_emails=to_email,
+                subject=subject,
+                html_content=html_body
+            )
+            sg = SendGridAPIClient(gateway_password)
+            response = sg.send(message)
+            # FIX 1: Fixed the broken 'in' syntax error here
+            if response.status_code in:
+                return True
+            else:
+                st.error(f"SendGrid returned unhealthy status code: {response.status_code}")
+                return False
         except Exception as e:
-            st.error(f"SendGrid API Error: {e}")
+            st.error(f"SendGrid Mail Transmission Error: {e}")
             return False
 
 # ==============================================================================
-# 4. MAIN WORKFLOW (Always Visible UI)
+# 4. CORE APPLICATION INTERACTIVE VIEWS
 # ==============================================================================
-st.sidebar.header("📋 Job Requirements Mapping")
-job_description = st.sidebar.text_area(
-    "Semantic Target Parameters (Job Profile):",
-    value="Looking for a Senior Python Engineer who can lead team discussions, articulate technical architectures clearly, and interact professionally with stakeholders.",
-    height=100
-)
+# FIX 2: Split tabs properly into separate distinct variables
+tab1, tab2 = st.tabs(["📥 Resume Ingestion Engine", "📊 Candidate Calibration Pipeline"])
 
-st.subheader("📁 Ingest Unstructured Resumes (Bulk Load PDF Gateway)")
-uploaded_files = st.file_uploader("Drag targets straight into the intake system container", type=["pdf"], accept_multiple_files=True)
-
-# రన్ బటన్ ఇప్పుడు ఎప్పుడూ స్క్రీన్‌పైనే కనిపిస్తుంది!
-run_engine = st.button("🚀 Trigger AI Processing Engine & Semantic Ranking")
-
-if run_engine:
-    if not api_key:
-        st.error("⚠️ Please provide a valid OpenAI API key in the sidebar configuration first!")
-    elif not uploaded_files:
-        st.warning("⚠️ Please upload at least one candidate resume PDF file first!")
-    else:
-        client = OpenAI(api_key=api_key)
-        w_comm_float = comm_weight / 100.0
+# ---- TAB 1: RESUME INGESTION ENGINE ----
+with tab1:
+    st.subheader("Upload Inbound Documents")
+    uploaded_files = st.file_uploader("Drop candidate resumes here (PDF only)", type=["pdf"], accept_multiple_files=True)
+    
+    job_description = st.text_area("Target Job Profile Matrix:", "Looking for a Software Engineer proficient in Python, SQL, Cloud Architectures, with exceptional communication skills.")
+    
+    if st.button("🚀 Execute Ingestion & Analysis Engine"):
+        if not api_key:
+            st.warning("Please configure your OpenAI Token Key Space in the sideb
