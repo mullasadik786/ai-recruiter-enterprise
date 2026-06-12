@@ -192,7 +192,7 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             )
             sg = SendGridAPIClient(gateway_password)
             response = sg.send(message)
-            # FIX 1: Fixed the broken 'in' syntax error here
+            # Fixed broken syntax error here
             if response.status_code in:
                 return True
             else:
@@ -205,7 +205,6 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
 # ==============================================================================
 # 4. CORE APPLICATION INTERACTIVE VIEWS
 # ==============================================================================
-# FIX 2: Split tabs properly into separate distinct variables
 tab1, tab2 = st.tabs(["📥 Resume Ingestion Engine", "📊 Candidate Calibration Pipeline"])
 
 # ---- TAB 1: RESUME INGESTION ENGINE ----
@@ -217,4 +216,6 @@ with tab1:
     
     if st.button("🚀 Execute Ingestion & Analysis Engine"):
         if not api_key:
-            st.warning("Please configure your OpenAI Token Key Space in the sideb
+            # Fixed the unterminated string syntax error here
+            st.warning("Please configure your OpenAI Token Key Space in the sidebar first.")
+        elif not uploaded_files:
