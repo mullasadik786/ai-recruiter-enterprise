@@ -192,8 +192,9 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             )
             sg = SendGridAPIClient(gateway_password)
             response = sg.send(message)
-            # FIX 1: SendGrid విజయవంతమైన స్టేటస్ కోడ్‌లను సరిగ్గా లిస్ట్‌గా ఇచ్చాము
-            if response.status_code in:
+            
+            # FIX: ఆటోమేటిక్ సింటాక్స్ క్రాష్ కాకుండా ఉండటానికి Range కండిషన్‌గా మార్చబడింది
+            if 200 <= response.status_code <= 299:
                 return True
             else:
                 st.error(f"SendGrid returned unhealthy status code: {response.status_code}")
@@ -218,3 +219,4 @@ with tab1:
         if not api_key:
             st.warning("Please configure your OpenAI Token Key Space in the sidebar first.")
         elif not uploaded_files:
+            st.warning("Please upload at least one candidate PDF document.")
