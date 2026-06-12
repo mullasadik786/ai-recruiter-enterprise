@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from openai import OpenAI
 from pypdf import PdfReader
 
-# sendgrid ఇంపోర్ట్ లోపం రాకుండా ఉండటానికి ఒక సేఫ్ హ్యాండ్లర్
+# Safe handler to prevent SendGrid import failure from crashing the app
 try:
     from sendgrid import SendGridAPIClient
     from sendgrid.helpers.mail import Mail, Email, To, Content
@@ -23,7 +23,7 @@ except ImportError:
 # ==============================================================================
 # 1. DATABASE SETUP (Streamlit Cloud Safe Mode)
 # ==============================================================================
-# Cloud ఎన్విరాన్మెంట్‌లో రైట్ పర్మిషన్స్ ప్రాబ్లమ్ రాకుండా ఉండటానికి /tmp/ లో డేటాబేస్ క్రియేట్ చేయడం మంచిది
+# Uses /tmp/ context if the root folder has strict write permission constraints in the cloud
 DB_FILE = "/tmp/ai_recruiter.db" if not os.access('.', os.W_OK) else "ai_recruiter.db"
 
 def init_db():
@@ -132,7 +132,7 @@ def show_pdf_preview(file):
 
 def get_html_template(candidate_name, meet_link, comp_name, is_reminder=False):
     title = f"{comp_name} - Urgent Reminder" if is_reminder else f"{comp_name} - Interview Invitation"
-    greeting = f"This is a gentle reminder that we are waiting for your confirmation." if is_reminder else "We are thrilled to inform you that you have been shortlisted for the interview rounds."
+    greeting = "This is a gentle reminder that we are waiting for your confirmation." if is_reminder else "We are thrilled to inform you that you have been shortlisted for the interview rounds."
     
     return f"""
     <html>
@@ -169,6 +169,7 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             msg['To'] = to_email
             msg['Subject'] = subject
             msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+            
             server = smtplib.SMTP('://gmail.com', 587)
             server.starttls()
             server.login(sender_email, gateway_password)
@@ -197,12 +198,12 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
 # ==============================================================================
 # 4. MAIN WORKFLOW
 # ==============================================================================
-if api_key:
-    client = OpenAI(api_key=api_key)
-else:
+if not api_key:
     st.info("💡 Application ready. Please provide your OpenAI API key in the sidebar configuration to begin screening.")
 
 if api_key:
+    client = OpenAI(api_key=api_key)
+
     st.sidebar.header("📋 Job Requirements Mapping")
     job_description = st.sidebar.text_area(
         "Semantic Target Parameters (Job Profile):",
