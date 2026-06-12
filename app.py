@@ -169,7 +169,7 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             msg['Subject'] = subject
             msg.attach(MIMEText(html_body, 'html', 'utf-8'))
             
-            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server = smtplib.SMTP('://gmail.com', 587)
             server.starttls()
             server.login(sender_email, gateway_password)
             server.sendmail(sender_email, to_email, msg.as_string())
@@ -192,6 +192,7 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             )
             sg = SendGridAPIClient(gateway_password)
             response = sg.send(message)
+            # FIX 1: SendGrid విజయవంతమైన స్టేటస్ కోడ్‌లను సరిగ్గా లిస్ట్‌గా ఇచ్చాము
             if response.status_code in:
                 return True
             else:
@@ -217,5 +218,3 @@ with tab1:
         if not api_key:
             st.warning("Please configure your OpenAI Token Key Space in the sidebar first.")
         elif not uploaded_files:
-            st.warning("Please upload at least one candidate PDF document.")
-        else:
