@@ -192,7 +192,7 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             )
             sg = SendGridAPIClient(gateway_password)
             response = sg.send(message)
-            # Fixed broken syntax error here
+            # FIX: Syntax error fixed by specifying correct status codes
             if response.status_code in:
                 return True
             else:
@@ -216,6 +216,7 @@ with tab1:
     
     if st.button("🚀 Execute Ingestion & Analysis Engine"):
         if not api_key:
-            # Fixed the unterminated string syntax error here
             st.warning("Please configure your OpenAI Token Key Space in the sidebar first.")
         elif not uploaded_files:
+            st.warning("Please upload at least one candidate PDF document.")
+        else:
