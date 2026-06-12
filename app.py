@@ -23,7 +23,6 @@ except ImportError:
 # ==============================================================================
 # 1. DATABASE SETUP (Streamlit Cloud Safe Mode)
 # ==============================================================================
-# Uses /tmp/ context if the root folder has strict write permission constraints in the cloud
 DB_FILE = "/tmp/ai_recruiter.db" if not os.access('.', os.W_OK) else "ai_recruiter.db"
 
 def init_db():
@@ -78,12 +77,12 @@ st.markdown("---")
 
 st.sidebar.header("⚙️ Core Engine Configuration")
 
+# API కీ కోసం ఇన్‌పుట్ బాక్స్
 api_key = os.environ.get("OPENAI_API_KEY", "")
 if not api_key:
     api_key = st.sidebar.text_input("OpenAI Token Key Space:", type="password", help="Input your sk-... token layer here.")
 
 st.sidebar.subheader("📊 Algorithmic Scoring Weightage")
-st.sidebar.markdown("Allocate vector mapping parameters. Total matrix target must resolve cleanly to 100%.")
 comm_weight = st.sidebar.slider("💬 Communication Vector Weight (%)", 0, 100, 50)
 tech_weight = 100 - comm_weight
 st.sidebar.info(f"💻 Automated Technical Competency Alignment: {tech_weight}%")
@@ -93,9 +92,9 @@ email_gateway = st.sidebar.selectbox("Active Protocol Layer:", ["Gmail SMTP Gate
 sender_email = st.sidebar.text_input("Validated Sender Address:", "sriskms786@gmail.com")
 
 if email_gateway == "Gmail SMTP Gateway":
-    gateway_password = st.sidebar.text_input("16-Digit App Encryption Password:", type="password", help="Google Account-generated secure wrapper key.")
+    gateway_password = st.sidebar.text_input("16-Digit App Encryption Password:", type="password")
 else:
-    gateway_password = st.sidebar.text_input("SendGrid Bearer API Token (SG...):", type="password", help="Production mail delivery transaction client key.")
+    gateway_password = st.sidebar.text_input("SendGrid Bearer API Token (SG...):", type="password")
 
 st.sidebar.subheader("🏢 Corporate Layout Identity")
 company_name = st.sidebar.text_input("Branding Identity Title:", "TechInno Solutions")
@@ -196,21 +195,27 @@ def send_enterprise_email(to_email, candidate_name, meet_link, comp_name, is_rem
             return False
 
 # ==============================================================================
-# 4. MAIN WORKFLOW
+# 4. MAIN WORKFLOW (Always Visible UI)
 # ==============================================================================
-if not api_key:
-    st.info("💡 Application ready. Please provide your OpenAI API key in the sidebar configuration to begin screening.")
+st.sidebar.header("📋 Job Requirements Mapping")
+job_description = st.sidebar.text_area(
+    "Semantic Target Parameters (Job Profile):",
+    value="Looking for a Senior Python Engineer who can lead team discussions, articulate technical architectures clearly, and interact professionally with stakeholders.",
+    height=100
+)
 
-if api_key:
-    client = OpenAI(api_key=api_key)
+st.subheader("📁 Ingest Unstructured Resumes (Bulk Load PDF Gateway)")
+uploaded_files = st.file_uploader("Drag targets straight into the intake system container", type=["pdf"], accept_multiple_files=True)
 
-    st.sidebar.header("📋 Job Requirements Mapping")
-    job_description = st.sidebar.text_area(
-        "Semantic Target Parameters (Job Profile):",
-        value="Looking for a Senior Python Engineer who can lead team discussions, articulate technical architectures clearly, and interact professionally with stakeholders.",
-        height=100
-    )
+# రన్ బటన్ ఇప్పుడు ఎప్పుడూ స్క్రీన్‌పైనే కనిపిస్తుంది!
+run_engine = st.button("🚀 Trigger AI Processing Engine & Semantic Ranking")
 
-    st.subheader("📁 Ingest Unstructured Resumes (Bulk Load PDF Gateway)")
-    uploaded_files = st.file_uploader("Drag targets straight into the intake system container", type=["pdf"], accept_multiple_files=True)
+if run_engine:
+    if not api_key:
+        st.error("⚠️ Please provide a valid OpenAI API key in the sidebar configuration first!")
+    elif not uploaded_files:
+        st.warning("⚠️ Please upload at least one candidate resume PDF file first!")
+    else:
+        client = OpenAI(api_key=api_key)
+        w_comm_float = comm_weight / 100.0
 
